@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #0f1014; /* Hitam Premium */
+  color: white;
+  font-family: sans-serif;
+}
+
+/* Sembunyikan scrollbar agar tampilan rapi */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
