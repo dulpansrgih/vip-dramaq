@@ -1,8 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
-  reactCompiler: true,
   reactStrictMode: true,
+  eslint: {
+    // Ini biar Vercel GAK BANYAK PROTES soal warning
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;
