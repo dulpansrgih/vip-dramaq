@@ -2,17 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Setup Dasar */
 body {
-  background-color: #0f1014; /* Hitam Premium */
-  color: white;
-  font-family: sans-serif;
+  background-color: #0a0a0a;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
 }
 
-/* Sembunyikan scrollbar agar tampilan rapi */
+/* Warna Seleksi Teks (Kalau diblok jadi Pink) */
+::selection {
+  background-color: #f43f5e;
+  color: white;
+}
+
+/* Scrollbar Sembunyi tapi Aktif */
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
 .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+/* Efek Glass (Kaca Transparan) */
+.glass-effect {
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
