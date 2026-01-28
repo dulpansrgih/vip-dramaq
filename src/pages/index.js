@@ -197,10 +197,10 @@ export default function Home() {
                     <div className="min-w-[260px] sm:min-w-[320px] md:min-w-[380px] group cursor-pointer">
                       <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-white/10 bg-white/5 shadow-[0_18px_60px_rgba(0,0,0,0.55)]">
                         <img
-                          src={item.coverWap || item.cover}
+                          src={item.coverWap || item.cover || item.bookCover}
                           className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
                           loading="lazy"
-                          alt=""
+                          alt={item.bookName || item.title || "poster"}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                         <div className="absolute bottom-4 left-4 right-4">
@@ -253,10 +253,10 @@ export default function Home() {
                       <div className="group cursor-pointer">
                         <div className="relative aspect-[3/4.2] rounded-2xl overflow-hidden bg-white/5 border border-white/10 shadow-[0_15px_45px_rgba(0,0,0,0.45)]">
                           <img
-                            src={item.coverWap || item.cover}
+                            src={item.coverWap || item.cover || item.bookCover}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                             loading="lazy"
-                            alt=""
+                            alt={item.bookName || item.title || "poster"}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent opacity-90" />
 
