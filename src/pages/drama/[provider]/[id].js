@@ -1,162 +1,457 @@
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
-import Head from 'next/head';
-import Link from 'next/link';
+import { useRouter } from "next/router";
+import { useEffect, useMemo, useState } from "react";
+import Head from "next/head";
+import Link from "next/link";
+
+function cn(...a) {
+  return a.filter(Boolean).join(" ");
+}
+
+function safeText(v) {
+  return typeof v === "string" ? v : "";
+}
+
+function pickCover(detail) {
+  return detail?.coverWap || detail?.cover || "";
+}
 
 export default function DramaDetail() {
   const router = useRouter();
   const { provider, id } = router.query;
+
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [synExpanded, setSynExpanded] = useState(false);
 
   // Fetch Data
   useEffect(() => {
-    if (!id) return;
+    if (!id || !provider) return;
     setLoading(true);
+
     fetch(`https://api.sansekai.my.id/api/${provider}/detail?bookId=${id}`)
-      .then(res => res.json())
-      .then(data => {
-        setDetail(data.data || data);
+      .then((res) => res.json())
+      .then((data) => {
+        setDetail(data?.data || data);
         setLoading(false);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
+        setDetail(null);
         setLoading(false);
       });
   }, [id, provider]);
 
-  if (loading || !detail) return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  );
+  const title = useMemo(() => {
+    if (!detail) return "Detail Film";
+    return detail.bookName || detail.title || "Detail Film";
+  }, [detail]);
+
+  const cover = useMemo(() => pickCover(detail), [detail]);
+
+  const tags = useMemo(() => {
+    const t = detail?.tags;
+    if (Array.isArray(t) && t.length) return t.slice(0, 12);
+    return [];
+  }, [detail]);
+
+  const intro = useMemo(() => {
+    const raw = safeText(detail?.introduction).trim();
+    return raw || "Sinopsis belum tersedia untuk drama ini. Namun drama ini telah dikurasi sebagai salah satu tontonan terbaik minggu ini. Nikmati alur cerita yang penuh kejutan dan emosi.";
+  }, [detail]);
+
+  const chapterCount = detail?.chapterCount ?? detail?.chapterNum ?? detail?.chapterTotal ?? null;
+
+  const watchHref = useMemo(() => {
+    if (!provider || !id) return "#";
+    return `/watch/${provider}/${id}/1`;
+  }, [provider, id]);
+
+  if (loading || !detail) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] font-sans text-white overflow-x-hidden relative">
-      <Head><title>{detail.bookName || "Detail Film"}</title></Head>
+      <Head>
+        <title>{title}</title>
+      </Head>
 
-      {/* --- TOMBOL BACK (FIXED & JELAS) --- */}
-      {/* Z-Index 100 biar selalu paling atas */}
-      <div className="fixed top-0 left-0 w-full p-4 md:p-6 z-[100] pointer-events-none">
-          <button 
-            onClick={() => router.back()} 
-            className="pointer-events-auto w-12 h-12 bg-black/60 hover:bg-primary backdrop-blur-md border border-white/30 rounded-full flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all group"
-          >
-              <span className="group-hover:-translate-x-1 transition-transform text-xl font-bold">←</span>
-          </button>
+      {/* Background */}
+      <div className="fixed inset-0 -z-10">
+        {cover ? (
+          <>
+            <img
+              src={cover}
+              className="w-full h-full object-cover opacity-20 blur-[90px] scale-110"
+              alt=""
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-[#050505]/85 to-[#050505]" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-[#050505]/70 to-[#050505]" />
+        )}
       </div>
 
-      {/* --- BACKGROUND GLOW --- */}
-      <div className="fixed inset-0 z-0">
-          <img 
-            src={detail.coverWap || detail.cover} 
-            className="w-full h-full object-cover opacity-20 blur-[80px]" 
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/90 to-[#050505]/50"></div>
-      </div>
+      {/* Top Bar */}
+      <div className="fixed top-0 left-0 w-full z-[120]">
+        <div className="px-4 pt-4">
+          <div className="mx-auto max-w-6xl">
+            <div className="rounded-2xl border border-white/10 bg-[#0b0b0b]/70 backdrop-blur-xl shadow-[0_14px_60px_rgba(0,0,0,0.55)]">
+              <div className="px-4 py-3 flex items-center gap-3">
+                <button
+                  onClick={() => router.back()}
+                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center justify-center"
+                  aria-label="Back"
+                  title="Back"
+                >
+                  <span className="text-lg font-black">←</span>
+                </button>
 
-      {/* --- KONTEN UTAMA --- */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-12 flex flex-col md:flex-row gap-8 md:gap-12 items-start justify-center min-h-[90vh] pt-20 md:pt-12">
-          
-          {/* KOLOM KIRI: POSTER */}
-          <div className="w-full md:w-[350px] flex-shrink-0 md:sticky md:top-10">
-              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(229,9,20,0.2)] border border-white/10 group">
-                  <img src={detail.coverWap || detail.cover} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                  
-                  {/* Badge Status */}
-                  <div className="absolute top-3 right-3 flex gap-2">
-                    <span className="bg-primary text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg">VIP</span>
-                    <span className="bg-black/60 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded border border-white/10">HD</span>
+                <div className="min-w-0">
+                  <div className="text-sm font-black truncate">{title}</div>
+                  <div className="text-[10px] text-gray-500 truncate">
+                    Provider: {String(provider || "").toUpperCase()}
+                    {chapterCount ? ` • ${chapterCount} episode` : ""}
                   </div>
+                </div>
+
+                <div className="ml-auto flex items-center gap-2">
+                  <span className="hidden sm:inline-flex text-[10px] px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-gray-300 font-black">
+                    VIP
+                  </span>
+
+                  <button
+                    onClick={() => {
+                      try {
+                        const url = typeof window !== "undefined" ? window.location.href : "";
+                        if (navigator?.share) {
+                          navigator.share({ title, url });
+                        } else if (navigator?.clipboard?.writeText) {
+                          navigator.clipboard.writeText(url);
+                          alert("Link disalin!");
+                        }
+                      } catch (e) {}
+                    }}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center justify-center"
+                    aria-label="Share"
+                    title="Share"
+                  >
+                    ↗
+                  </button>
+                </div>
               </div>
 
-              {/* Stats Bar */}
-              <div className="grid grid-cols-3 gap-2 mt-4 bg-white/5 border border-white/5 p-3 rounded-xl text-center backdrop-blur-sm">
-                  <div>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-widest">Rating</p>
-                      <p className="font-bold text-yellow-400">9.8</p>
-                  </div>
-                  <div className="border-l border-white/10">
-                      <p className="text-[10px] text-gray-400 uppercase tracking-widest">Episode</p>
-                      <p className="font-bold text-white">{detail.chapterCount || "?"}</p>
-                  </div>
-                  <div className="border-l border-white/10">
-                      <p className="text-[10px] text-gray-400 uppercase tracking-widest">Tahun</p>
-                      <p className="font-bold text-white">2024</p>
-                  </div>
-              </div>
+              {/* small divider glow */}
+              <div className="h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* KOLOM KANAN: DETAIL INFO */}
-          <div className="flex-1 w-full">
-              
-              <div className="mb-6">
-                  <div className="flex flex-wrap items-center gap-3 mb-2 text-xs md:text-sm text-gray-400 font-medium">
-                      <span className="text-primary font-bold tracking-wider">SERIES BARU</span>
-                      <span>•</span>
-                      <span>Romance</span>
-                      <span>•</span>
-                      <span>Drama</span>
+      {/* Main */}
+      <div className="pt-[92px] md:pt-[104px] pb-24 md:pb-10">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="grid grid-cols-1 md:grid-cols-[360px_1fr] gap-6 md:gap-10 items-start">
+            {/* Poster Column */}
+            <div className="md:sticky md:top-[120px]">
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] shadow-[0_24px_80px_rgba(0,0,0,0.65)]">
+                <div className="relative aspect-[3/4]">
+                  {cover ? (
+                    <img
+                      src={cover}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      alt={title}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-white/5" />
+                  )}
+
+                  {/* gradient for readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                  {/* badges */}
+                  <div className="absolute top-4 left-4 flex gap-2">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-white text-black">
+                      VIP
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-black/50 border border-white/15">
+                      HD
+                    </span>
                   </div>
-                  <h1 className="text-3xl md:text-5xl lg:text-6xl font-black leading-tight text-white mb-4 drop-shadow-2xl">
-                      {detail.bookName || detail.title}
-                  </h1>
-                  
-                  <div className="flex flex-wrap gap-2 mb-6">
-                      {detail.tags?.map((tag, i) => (
-                          <span key={i} className="text-[11px] bg-white/5 border border-white/10 px-3 py-1 rounded-full text-gray-300 hover:text-white hover:border-primary transition-colors cursor-default">
-                              #{tag}
-                          </span>
-                      )) || <span className="text-[11px] text-gray-500 italic">#DramaViral</span>}
-                  </div>
-              </div>
+                </div>
 
-              {/* Tombol Aksi */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                  <Link href={`/watch/${provider}/${id}/1`} className="flex-1">
-                      <button className="w-full py-4 bg-gradient-to-r from-primary to-rose-700 rounded-xl font-bold text-lg text-white shadow-[0_0_25px_rgba(229,9,20,0.4)] hover:shadow-[0_0_40px_rgba(229,9,20,0.6)] hover:scale-[1.02] transition-all flex items-center justify-center gap-3">
-                          <span className="bg-white text-primary rounded-full w-6 h-6 flex items-center justify-center text-xs pl-0.5">▶</span>
-                          MULAI NONTON
-                      </button>
-                  </Link>
-                  <button className="px-6 py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-gray-300 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 justify-center">
-                      <span>+</span>
-                  </button>
-                  <button className="px-6 py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-gray-300 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 justify-center">
-                      <span>↗</span>
-                  </button>
-              </div>
-
-              {/* Sinopsis Box */}
-              <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8">
-                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                      <span className="w-1 h-6 bg-primary rounded-full"></span>
-                      Sinopsis Cerita
-                  </h3>
-                  <p className="text-gray-300 leading-relaxed text-sm md:text-base text-justify">
-                      {detail.introduction || "Sinopsis belum tersedia untuk drama ini. Namun jangan khawatir, drama ini telah dikurasi sebagai salah satu tontonan terbaik minggu ini. Nikmati alur cerita yang penuh kejutan dan emosi."}
-                  </p>
-              </div>
-
-              {/* Info Tambahan */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div className="bg-white/5 border border-white/5 rounded-xl p-4">
-                      <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Pemeran Utama</h4>
-                      <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-700 rounded-full border border-white/10"></div>
-                          <div className="w-10 h-10 bg-gray-700 rounded-full border border-white/10"></div>
-                          <div className="w-10 h-10 bg-gray-700 rounded-full border border-white/10"></div>
-                          <span className="text-xs text-gray-500 italic">+ Lainnya</span>
+                {/* Stats */}
+                <div className="p-4">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-2xl bg-white/5 border border-white/10 p-3 text-center">
+                      <div className="text-[10px] text-gray-500 font-black tracking-widest">
+                        EP
                       </div>
+                      <div className="text-base font-black text-white mt-1">
+                        {chapterCount || "?"}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-white/5 border border-white/10 p-3 text-center">
+                      <div className="text-[10px] text-gray-500 font-black tracking-widest">
+                        GENRE
+                      </div>
+                      <div className="text-[12px] font-black text-white mt-1 truncate">
+                        {tags?.[0] || "Drama"}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-white/5 border border-white/10 p-3 text-center">
+                      <div className="text-[10px] text-gray-500 font-black tracking-widest">
+                        TYPE
+                      </div>
+                      <div className="text-[12px] font-black text-white mt-1">
+                        Short
+                      </div>
+                    </div>
                   </div>
-                  <div className="bg-white/5 border border-white/5 rounded-xl p-4">
-                      <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Detail Produksi</h4>
-                      <p className="text-xs text-gray-300">Studio: <span className="text-white font-bold">VIP Original</span></p>
-                      <p className="text-xs text-gray-300 mt-1">Negara: <span className="text-white font-bold">China / Global</span></p>
+
+                  {/* Desktop CTA */}
+                  <div className="hidden md:flex gap-2 mt-4">
+                    <Link href={watchHref} legacyBehavior>
+                      <a className="flex-1">
+                        <button className="w-full py-3 rounded-2xl font-black bg-gradient-to-r from-primary to-rose-700 shadow-[0_0_28px_rgba(229,9,20,0.28)] hover:opacity-95 transition flex items-center justify-center gap-2">
+                          <span className="w-7 h-7 rounded-full bg-white text-primary flex items-center justify-center text-xs font-black">
+                            ▶
+                          </span>
+                          Mulai Nonton
+                        </button>
+                      </a>
+                    </Link>
+
+                    <button
+                      className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center justify-center"
+                      title="Tambah ke daftar"
+                      aria-label="Add"
+                    >
+                      +
+                    </button>
+                    <button
+                      className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center justify-center"
+                      title="Bagikan"
+                      aria-label="Share"
+                      onClick={() => {
+                        try {
+                          const url = typeof window !== "undefined" ? window.location.href : "";
+                          if (navigator?.share) navigator.share({ title, url });
+                          else if (navigator?.clipboard?.writeText) {
+                            navigator.clipboard.writeText(url);
+                            alert("Link disalin!");
+                          }
+                        } catch (e) {}
+                      }}
+                    >
+                      ↗
+                    </button>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Info Column */}
+            <div>
+              {/* Title + tags */}
+              <div className="rounded-3xl border border-white/10 bg-white/[0.035] shadow-[0_24px_80px_rgba(0,0,0,0.55)] overflow-hidden">
+                <div className="p-5 md:p-6">
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400 font-bold">
+                    <span className="text-primary font-black tracking-wider">SERIES</span>
+                    <span className="text-gray-600">•</span>
+                    <span className="uppercase">{String(provider || "")}</span>
+                    {chapterCount ? (
+                      <>
+                        <span className="text-gray-600">•</span>
+                        <span>{chapterCount} Episode</span>
+                      </>
+                    ) : null}
+                  </div>
+
+                  <h1 className="mt-2 text-2xl md:text-4xl lg:text-5xl font-black leading-tight">
+                    {title}
+                  </h1>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {tags.length ? (
+                      tags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="text-[11px] px-3 py-1 rounded-full bg-white/5 border border-white/10 text-gray-300 hover:border-primary/60 hover:text-white transition"
+                        >
+                          #{tag}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[11px] px-3 py-1 rounded-full bg-white/5 border border-white/10 text-gray-400 italic">
+                        #DramaViral
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Mobile actions (under title) */}
+                  <div className="md:hidden mt-5 grid grid-cols-3 gap-2">
+                    <button
+                      className="rounded-2xl bg-white/5 border border-white/10 py-3 font-black text-sm hover:bg-white/10 transition"
+                      onClick={() => alert("Fitur daftar segera hadir")}
+                    >
+                      + List
+                    </button>
+                    <button
+                      className="rounded-2xl bg-white/5 border border-white/10 py-3 font-black text-sm hover:bg-white/10 transition"
+                      onClick={() => {
+                        try {
+                          const url = typeof window !== "undefined" ? window.location.href : "";
+                          if (navigator?.share) navigator.share({ title, url });
+                          else if (navigator?.clipboard?.writeText) {
+                            navigator.clipboard.writeText(url);
+                            alert("Link disalin!");
+                          }
+                        } catch (e) {}
+                      }}
+                    >
+                      Share
+                    </button>
+                    <button
+                      className="rounded-2xl bg-white/5 border border-white/10 py-3 font-black text-sm hover:bg-white/10 transition"
+                      onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })}
+                    >
+                      Info
+                    </button>
+                  </div>
+                </div>
+
+                <div className="h-[1px] bg-white/10" />
+
+                {/* Synopsis */}
+                <div className="p-5 md:p-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-6 bg-primary rounded-full" />
+                      <h3 className="text-base md:text-lg font-black">Sinopsis</h3>
+                    </div>
+
+                    <button
+                      onClick={() => setSynExpanded((s) => !s)}
+                      className="text-[11px] px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition font-black"
+                    >
+                      {synExpanded ? "Ringkas" : "Lihat semua"}
+                    </button>
+                  </div>
+
+                  <p
+                    className={cn(
+                      "mt-3 text-gray-300 leading-relaxed text-sm md:text-base",
+                      synExpanded ? "" : "line-clamp-4"
+                    )}
+                    style={{ textAlign: "justify" }}
+                  >
+                    {intro}
+                  </p>
+
+                  <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+                      <div className="text-[10px] text-gray-500 font-black tracking-widest">
+                        PROVIDER
+                      </div>
+                      <div className="mt-1 text-sm font-black text-white uppercase truncate">
+                        {String(provider || "")}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+                      <div className="text-[10px] text-gray-500 font-black tracking-widest">
+                        EPISODE
+                      </div>
+                      <div className="mt-1 text-sm font-black text-white">
+                        {chapterCount || "?"}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+                      <div className="text-[10px] text-gray-500 font-black tracking-widest">
+                        QUALITY
+                      </div>
+                      <div className="mt-1 text-sm font-black text-white">
+                        HD
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+                      <div className="text-[10px] text-gray-500 font-black tracking-widest">
+                        TYPE
+                      </div>
+                      <div className="mt-1 text-sm font-black text-white">
+                        Short
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              {/* Extra cards */}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+                  <div className="text-[11px] text-gray-500 font-black tracking-widest">
+                    PEMERAN UTAMA
+                  </div>
+                  <div className="mt-3 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/10 rounded-full border border-white/10" />
+                    <div className="w-10 h-10 bg-white/10 rounded-full border border-white/10" />
+                    <div className="w-10 h-10 bg-white/10 rounded-full border border-white/10" />
+                    <span className="text-xs text-gray-500 italic">+ lainnya</span>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+                  <div className="text-[11px] text-gray-500 font-black tracking-widest">
+                    PRODUKSI
+                  </div>
+                  <div className="mt-3 text-sm text-gray-300">
+                    Studio: <span className="text-white font-black">VIP Original</span>
+                  </div>
+                  <div className="mt-1 text-sm text-gray-300">
+                    Region: <span className="text-white font-black">Global</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Spacer for mobile sticky CTA */}
+              <div className="h-6 md:hidden" />
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Sticky CTA */}
+      <div className="md:hidden fixed bottom-0 left-0 w-full z-[130]">
+        <div className="px-4 pb-4">
+          <div className="mx-auto max-w-6xl">
+            <div className="rounded-2xl border border-white/10 bg-[#0b0b0b]/80 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.55)] p-3 flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="text-[12px] font-black truncate">{title}</div>
+                <div className="text-[10px] text-gray-500 truncate">
+                  {chapterCount ? `${chapterCount} Episode` : "Short Drama"} • {String(provider || "").toUpperCase()}
+                </div>
+              </div>
+
+              <Link href={watchHref} legacyBehavior>
+                <a>
+                  <button className="px-5 py-3 rounded-2xl font-black bg-gradient-to-r from-primary to-rose-700 shadow-[0_0_26px_rgba(229,9,20,0.28)] hover:opacity-95 transition flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-white text-primary flex items-center justify-center text-[10px] font-black">
+                      ▶
+                    </span>
+                    Nonton
+                  </button>
+                </a>
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
